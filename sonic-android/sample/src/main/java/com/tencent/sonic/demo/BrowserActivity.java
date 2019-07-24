@@ -17,9 +17,11 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
@@ -47,17 +49,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.tencent.sonic.demo.SonicJavaScriptInterface.PARAM_CLICK_TIME;
+
 /**
- *  A demo browser activity
- *  In this demo there are three modes,
- *  sonic mode: sonic mode means webview loads html by sonic,
- *  offline mode: offline mode means webview loads html from local offline packages,
- *  default mode: default mode means webview loads html in the normal way.
- *
+ * A demo browser activity
+ * In this demo there are three modes,
+ * sonic mode: sonic mode means webview loads html by sonic,
+ * offline mode: offline mode means webview loads html from local offline packages,
+ * default mode: default mode means webview loads html in the normal way.
  */
 
 public class BrowserActivity extends Activity {
-
 
     public final static String PARAM_URL = "param_url";
 
@@ -71,6 +73,7 @@ public class BrowserActivity extends Activity {
         Intent intent = getIntent();
         String url = intent.getStringExtra(PARAM_URL);
         int mode = intent.getIntExtra(PARAM_MODE, -1);
+        final long clickTime = intent.getLongExtra(PARAM_CLICK_TIME, -1);
         if (TextUtils.isEmpty(url) || -1 == mode) {
             finish();
             return;
@@ -137,12 +140,27 @@ public class BrowserActivity extends Activity {
         // init webview
         WebView webView = (WebView) findViewById(R.id.webview);
         webView.setWebViewClient(new WebViewClient() {
+            long pageStartTime = -1, pageFinishTime = -1;
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                pageFinishTime = System.currentTimeMillis();
                 if (sonicSession != null) {
                     sonicSession.getSessionClient().pageFinish(url);
                 }
+                if (pageStartTime != -1 && pageFinishTime != -1) {
+                    Log.d("打开耗时-Started2Finished", String.valueOf(pageFinishTime - pageStartTime));
+                }
+                if (clickTime != -1 && pageFinishTime != -1) {
+                    Log.d("打开耗时-Clicked2Finished", String.valueOf(pageFinishTime - clickTime));
+                }
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                pageStartTime = System.currentTimeMillis();
             }
 
             @TargetApi(21)
